@@ -18,20 +18,18 @@ from sklearn.ensemble import RandomForestClassifier
 
 st.markdown("""
 <style>
-/* Main headings and subheadings */
-h1, h2, h3, h4, h5, h6 {
-    color: black !important;
-    text-shadow: 1px 1px 2px white; /* optional: subtle shadow for extra visibility */
+/* Tab content text */
+[data-baseweb="tab-panel"] {
+    color: black !important;  /* Makes all tab content text black */
 }
 
-/* Tab titles */
-.css-1hynsf0 { 
+/* Metric labels inside tabs */
+.stMetric-value, .stMetric-label {
     color: black !important;
-    font-weight: bold;
 }
 
-/* Metric labels (like Risk Score) */
-.stMetric-label {
+/* Optional: recommendations or paragraphs */
+.stMarkdown p, .stMarkdown li {
     color: black !important;
 }
 </style>
