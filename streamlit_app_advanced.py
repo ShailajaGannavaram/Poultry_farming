@@ -48,11 +48,6 @@ def set_background(image_file):
         background-size: cover;
         background-attachment: fixed;
     }}
-    .block-container {{
-        background-color: rgba(255, 255, 255, 0.85);
-        padding: 20px;
-        border-radius: 12px;
-    }}
     </style>
     """
     st.markdown(page_bg, unsafe_allow_html=True)
