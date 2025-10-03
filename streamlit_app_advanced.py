@@ -12,7 +12,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json, os, uuid
-from datetime import datetime, date
+from datetime import datetime
 import base64
 from sklearn.ensemble import RandomForestClassifier
 
@@ -44,7 +44,7 @@ def set_background(image_file):
     .stApp {{
         background-image: url("data:image/png;base64,{b64}");
         background-size: cover;
-        background-position: center;   /* ensures the whole image is centered */
+        background-position: center;
         background-attachment: fixed;
     }}
     </style>
@@ -60,24 +60,18 @@ h1, h2, h3, h4, h5, h6 { color: black !important; }
 """, unsafe_allow_html=True)
 
 # ---------- Multilingual support ----------
-if "lang" not in st.session_state:
-    st.session_state.lang = "en"
-
 LANGS = {
-    "english": {"title":"Digital Farm Biosecurity Portal","language":"Language","register":"Register Farm",
+    "en": {"title":"Digital Farm Biosecurity Portal","language":"Language","register":"Register Farm",
            "farmer_name":"Farmer / Owner name","farm_name":"Farm name","location":"Location","species":"Species",
-           "choose_farm":"Select farm","risk_assessment":"Risk Assessment","start_assessment":"Start Assessment",
-           "score":"Risk score","recommendations":"Recommendations","training":"Training Modules",
+           "choose_farm":"Select farm","risk_assessment":"Risk Assessment","training":"Training Modules",
            "compliance":"Compliance Tracker","dashboard":"Dashboard & Alerts"},
-    "hindi": {"title":"डिजिटल फार्म बायोसेक्युरिटी पोर्टल","language":"भाषा","register":"फार्म रजिस्टर करें",
+    "hi": {"title":"डिजिटल फार्म बायोसेक्युरिटी पोर्टल","language":"भाषा","register":"फार्म रजिस्टर करें",
            "farmer_name":"किसान / स्वामी का नाम","farm_name":"फार्म का नाम","location":"स्थान","species":"प्रजाति",
-           "choose_farm":"फार्म चुनें","risk_assessment":"जोखिम मूल्यांकन","start_assessment":"मूल्यांकन शुरू करें",
-           "score":"जोखिम स्कोर","recommendations":"अनुशंसाएँ","training":"प्रशिक्षण मॉड्यूल",
+           "choose_farm":"फार्म चुनें","risk_assessment":"जोखिम मूल्यांकन","training":"प्रशिक्षण मॉड्यूल",
            "compliance":"अनुपालन ट्रैकर","dashboard":"डैशबोर्ड और अलर्ट"},
-    "telugu": {"title":"డిజిటల్ ఫార్మ్ బయోసెక్యూరిటీ పోర్టల్","language":"భాష","register":"ఫార్మ్ నమోదు చేయండి",
+    "te": {"title":"డిజిటల్ ఫార్మ్ బయోసెక్యూరిటీ పోర్టల్","language":"భాష","register":"ఫార్మ్ నమోదు చేయండి",
            "farmer_name":"వ్యవసాయి / యజమాని పేరు","farm_name":"ఫార్మ్ పేరు","location":"స్థానం","species":"జాతి",
-           "choose_farm":"ఫార్మ్ ఎంచుకోండి","risk_assessment":"రిస్క్ ఆంకలనం","start_assessment":"ఆంకలనం ప్రారంభించండి",
-           "score":"రిస్క్ స్కోరు","recommendations":"సిఫార్సులు","training":"శిక్షణ మాడ్యూల్స్",
+           "choose_farm":"ఫార్మ్ ఎంచుకోండి","risk_assessment":"రిస్క్ ఆంకలనం","training":"శిక్షణ మాడ్యూల్స్",
            "compliance":"అనుగుణత ట్రాకర్","dashboard":"డ్యాష్‌బోర్డ్ & అలర్ట్లు"}
 }
 
@@ -86,14 +80,16 @@ col1, col2 = st.columns([8,1])
 with col1:
     st.title("Digital Farm Biosecurity Portal")
 with col2:
-    lang = st.selectbox("Language", ["English","हिन्दी","తెలుగు"])
-    if lang.startswith("ह"): st.session_state.lang="hi"
-    elif lang.startswith("త"): st.session_state.lang="te"
-    else: st.session_state.lang="en"
+    # Initialize language
+    if "lang" not in st.session_state:
+        st.session_state.lang = "en"
+    lang_choice = st.selectbox("Language", ["English","हिन्दी","తెలుగు"])
+    lang_map = {"English":"en", "हिन्दी":"hi", "తెలుగు":"te"}
+    st.session_state.lang = lang_map.get(lang_choice, "en")
 t = LANGS[st.session_state.lang]
 
 # ---------- Set background ----------
-set_background("poultry.png")  # PNG landscape background
+set_background("poultry.png")
 
 # ---------- AI Risk Model ----------
 @st.cache_resource
@@ -105,7 +101,6 @@ def train_model(seed=42):
     X = np.hstack([X, nearby])
     scores = X[:,0]+(2-X[:,1])+(2-X[:,2])+(2-X[:,3])+4*X[:,4]
     y = (scores>5).astype(int)
-    from sklearn.ensemble import RandomForestClassifier
     clf = RandomForestClassifier(n_estimators=80, random_state=seed)
     clf.fit(X,y)
     return clf
@@ -129,7 +124,7 @@ with left:
             new = {"id":fid,"owner":owner,"farm":farm,"location":loc,"species":species,
                    "lat":float(lat),"lon":float(lon),"created":str(datetime.utcnow())}
             data["farms"].append(new)
-            with open(DATA_FILE,"w") as f: json.dump(data,f,indent=2)
+            save_data(data)
             st.success(f"Registered: {farm}")
     farm_options = {f"{f['farm']} ({f['owner']})": f["id"] for f in data["farms"]}
     if farm_options:
@@ -190,4 +185,3 @@ with tabs[3]:
     st.write("- Nearby outbreaks: None")
     st.write("- Risk status: Moderate")
     st.write("- Compliance: 3/5 tasks completed")
-
