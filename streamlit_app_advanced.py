@@ -16,6 +16,28 @@ from datetime import datetime
 import base64
 from sklearn.ensemble import RandomForestClassifier
 
+st.markdown("""
+<style>
+/* Main headings and subheadings */
+h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+    text-shadow: 1px 1px 2px white; /* optional: subtle shadow for extra visibility */
+}
+
+/* Tab titles */
+.css-1hynsf0 { 
+    color: black !important;
+    font-weight: bold;
+}
+
+/* Metric labels (like Risk Score) */
+.stMetric-label {
+    color: black !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # ---------- Data storage ----------
 DATA_FILE = "farm_data_final.json"
 
