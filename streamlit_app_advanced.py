@@ -1,19 +1,17 @@
 """
-Digital Farm Biosecurity Portal — Final Advanced Prototype
+Digital Farm Biosecurity Portal — Final SIH Demo Prototype
 Features:
+- Fully fitted background image (poultry farm)
+- Dark headings and tab titles for visibility
 - Multilingual: English, Hindi, Telugu
-- Risk assessment + AI predictor
-- Farm dashboard, alerts, compliance, training
-- Points & badges
-- Farmer–Vet messaging
-- Background image support (poultry.png)
-- Semi-transparent containers for readability
+- Risk Assessment + AI predictor
+- Training Modules, Compliance Tracker, Dashboard & Alerts
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import json, os, uuid, hashlib
+import json, os, uuid
 from datetime import datetime, date
 import base64
 from sklearn.ensemble import RandomForestClassifier
@@ -46,65 +44,58 @@ def set_background(image_file):
     .stApp {{
         background-image: url("data:image/png;base64,{b64}");
         background-size: cover;
+        background-position: center;   /* ensures the whole image is centered */
         background-attachment: fixed;
     }}
     </style>
     """
     st.markdown(page_bg, unsafe_allow_html=True)
 
+# ---------- Dark headings & tabs ----------
+st.markdown("""
+<style>
+h1, h2, h3, h4, h5, h6 { color: black !important; }
+.css-1hynsf0 { color: black !important; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
+
 # ---------- Multilingual support ----------
 if "lang" not in st.session_state:
     st.session_state.lang = "en"
 
 LANGS = {
-    "en": {"title":"Digital Farm Biosecurity Portal","language":"Language","register":"Register Farm",
+    "english": {"title":"Digital Farm Biosecurity Portal","language":"Language","register":"Register Farm",
            "farmer_name":"Farmer / Owner name","farm_name":"Farm name","location":"Location","species":"Species",
            "choose_farm":"Select farm","risk_assessment":"Risk Assessment","start_assessment":"Start Assessment",
            "score":"Risk score","recommendations":"Recommendations","training":"Training Modules",
-           "compliance":"Compliance Tracker","add_task":"Add Compliance Task","task_name":"Task name",
-           "deadline":"Deadline","mark_done":"Mark done","dashboard":"Dashboard & Alerts",
-           "simulate_alert":"Simulate Biosecurity Breach","alerts":"Alerts","map":"Farm Map & Nearby Outbreaks",
-           "predictor":"AI Risk Predictor","probability":"Predicted probability","badges":"Badges & Points",
-           "messages":"Farmer–Vet Messages","send":"Send Message","certificate":"Download Certificate"},
-    "hi": {"title":"डिजिटल फार्म बायोसेक्युरिटी पोर्टल","language":"भाषा","register":"फार्म रजिस्टर करें",
+           "compliance":"Compliance Tracker","dashboard":"Dashboard & Alerts"},
+    "hindi": {"title":"डिजिटल फार्म बायोसेक्युरिटी पोर्टल","language":"भाषा","register":"फार्म रजिस्टर करें",
            "farmer_name":"किसान / स्वामी का नाम","farm_name":"फार्म का नाम","location":"स्थान","species":"प्रजाति",
            "choose_farm":"फार्म चुनें","risk_assessment":"जोखिम मूल्यांकन","start_assessment":"मूल्यांकन शुरू करें",
            "score":"जोखिम स्कोर","recommendations":"अनुशंसाएँ","training":"प्रशिक्षण मॉड्यूल",
-           "compliance":"अनुपालन ट्रैकर","add_task":"अनुपालन कार्य जोड़ें","task_name":"कार्य का नाम",
-           "deadline":"समय सीमा","mark_done":"पूरा हुआ","dashboard":"डैशबोर्ड और अलर्ट",
-           "simulate_alert":"बायोसेक्युरिटी उल्लंघन सिमुलेट करें","alerts":"अलर्ट","map":"फार्म नक्शा और निकटवर्ती संक्रमण",
-           "predictor":"AI जोखिम भविष्यवक्ता","probability":"पूर्वानुमानित संभावना","badges":"बैज और अंक",
-           "messages":"किसान–पशु चिकित्सक संदेश","send":"संदेश भेजें","certificate":"प्रमाणपत्र डाउनलोड करें"},
-    "te": {"title":"డిజిటల్ ఫార్మ్ బయోసెక్యూరిటీ పోర్టల్","language":"భాష","register":"ఫార్మ్ నమోదు చేయండి",
+           "compliance":"अनुपालन ट्रैकर","dashboard":"डैशबोर्ड और अलर्ट"},
+    "telugu": {"title":"డిజిటల్ ఫార్మ్ బయోసెక్యూరిటీ పోర్టల్","language":"భాష","register":"ఫార్మ్ నమోదు చేయండి",
            "farmer_name":"వ్యవసాయి / యజమాని పేరు","farm_name":"ఫార్మ్ పేరు","location":"స్థానం","species":"జాతి",
            "choose_farm":"ఫార్మ్ ఎంచుకోండి","risk_assessment":"రిస్క్ ఆంకలనం","start_assessment":"ఆంకలనం ప్రారంభించండి",
            "score":"రిస్క్ స్కోరు","recommendations":"సిఫార్సులు","training":"శిక్షణ మాడ్యూల్స్",
-           "compliance":"అనుగుణత ట్రాకర్","add_task":"అనుగుణత కార్యాన్ని జోడించండి","task_name":"కార్య పేరు",
-           "deadline":"గడువు తేదీ","mark_done":"పూర్తయింది","dashboard":"డ్యాష్‌బోర్డ్ & అలర్ట్లు",
-           "simulate_alert":"బ్రచ్‌ని అనుకరించండి","alerts":"అలర్ట్ల","map":"ఫార్మ్ నకశా మరియు పరిసర వ్యాధి కేంద్రాలు",
-           "predictor":"AI రిస్క్ ప్రిడిక్టర్","probability":"గుర్తించిన సంభావ్యత","badges":"బాడ్జీలు & పాయింట్లు",
-           "messages":"వ్యవసాయి–వెటర్ సందేశాలు","send":"సందేశం పంపండి","certificate":"సర్టిఫికెట్ డౌన్లోడ్ చేయండి"}
+           "compliance":"అనుగుణత ట్రాకర్","dashboard":"డ్యాష్‌బోర్డ్ & అలర్ట్లు"}
 }
 
-# ---------- Language selection ----------
+# ---------- Header & language selection ----------
 col1, col2 = st.columns([8,1])
 with col1:
     st.title("Digital Farm Biosecurity Portal")
 with col2:
-    lang = st.selectbox("Language", options=["English","हिन्दी","తెలుగు"])
-    if lang.startswith("ह"):
-        st.session_state.lang = "hi"
-    elif lang.startswith("త"):
-        st.session_state.lang = "te"
-    else:
-        st.session_state.lang = "en"
-
+    lang = st.selectbox("Language", ["English","हिन्दी","తెలుగు"])
+    if lang.startswith("ह"): st.session_state.lang="hi"
+    elif lang.startswith("త"): st.session_state.lang="te"
+    else: st.session_state.lang="en"
 t = LANGS[st.session_state.lang]
 
-# ---------- Set Background ----------
-set_background("poultry.png")  # updated PNG background
+# ---------- Set background ----------
+set_background("poultry.png")  # PNG landscape background
 
-# ---------- Train synthetic AI model ----------
+# ---------- AI Risk Model ----------
 @st.cache_resource
 def train_model(seed=42):
     rng = np.random.RandomState(seed)
@@ -114,14 +105,14 @@ def train_model(seed=42):
     X = np.hstack([X, nearby])
     scores = X[:,0]+(2-X[:,1])+(2-X[:,2])+(2-X[:,3])+4*X[:,4]
     y = (scores>5).astype(int)
+    from sklearn.ensemble import RandomForestClassifier
     clf = RandomForestClassifier(n_estimators=80, random_state=seed)
     clf.fit(X,y)
     return clf
 
 model = train_model()
 
-# ---------- Rest of app ----------
-# Farm registration & selection
+# ---------- Layout ----------
 left, right = st.columns([2.5,7.5])
 with left:
     st.header(t["register"])
@@ -136,9 +127,9 @@ with left:
         if submit:
             fid = str(uuid.uuid4())
             new = {"id":fid,"owner":owner,"farm":farm,"location":loc,"species":species,
-                   "lat":float(lat),"lon":float(lon),"created":str(datetime.utcnow()),"points":0,"badges":[]}
+                   "lat":float(lat),"lon":float(lon),"created":str(datetime.utcnow())}
             data["farms"].append(new)
-            save_data(data)
+            with open(DATA_FILE,"w") as f: json.dump(data,f,indent=2)
             st.success(f"Registered: {farm}")
     farm_options = {f"{f['farm']} ({f['owner']})": f["id"] for f in data["farms"]}
     if farm_options:
@@ -148,38 +139,55 @@ with left:
         st.markdown(f"**{current_farm['farm']}** — {current_farm['owner']}")
     else:
         current_farm = None
-        current_id = None
-        st.info("No farms yet")
 
-# Right side tabs: Risk Assessment, Training, Compliance, Dashboard
+# Tabs
 tabs = right.tabs([t["risk_assessment"], t["training"], t["compliance"], t["dashboard"]])
 
-# Risk Assessment Tab
+# --- Risk Assessment ---
 with tabs[0]:
     st.subheader(t["risk_assessment"])
     if current_farm:
-        st.markdown(f"**Farm:** {current_farm['farm']} | **Species:** {current_farm['species']} | **Location:** {current_farm['location']}")
         with st.form("assess"):
             v = st.selectbox("Visitors allowed?", ["No","Sometimes","Yes"])
             iso = st.selectbox("Sick animals isolated?", ["Yes","Sometimes","No"])
             feed = st.selectbox("Feed rodent-proof?", ["Yes","Sometimes","No"])
             foot = st.selectbox("Footbath/Vehicle disinfection?", ["Yes","Sometimes","No"])
             recent = st.selectbox("Nearby outbreak?", ["No","Yes"])
-            sub = st.form_submit_button(t["start_assessment"])
+            sub = st.form_submit_button("Submit")
         if sub:
             map_v = {"No":0,"Sometimes":1,"Yes":2}
             map_iso = {"Yes":2,"Sometimes":1,"No":0}
             x = np.array([[map_v[v], map_iso[iso], map_iso[feed], map_iso[foot], 1 if recent=="Yes" else 0]])
             prob = model.predict_proba(x)[0][1]
-            percent = int(prob*100)
             level = "High" if prob>0.6 else ("Moderate" if prob>0.3 else "Low")
-            st.metric(t["score"], f"{percent}/100 ({level})")
+            st.metric("Risk Score", f"{int(prob*100)}/100 ({level})")
             recs = ["Maintain protocols"] if prob<=0.3 else ["Strengthen disinfection","Call vet"] if prob<=0.6 else ["Immediate containment","Suspend visitors","Increase cleaning"]
-            st.markdown("**"+t["recommendations"]+"**")
-            for r in recs:
-                st.write("- "+r)
-    else:
-        st.info("Select a farm first")
+            st.markdown("**Recommendations:**")
+            for r in recs: st.write("- "+r)
 
-# (You can extend tabs[1], tabs[2], tabs[3] similarly using previous prototype features)
-# Semi-transparent containers already applied in CSS
+# --- Training Modules ---
+with tabs[1]:
+    st.subheader(t["training"])
+    st.write("📚 Best Practices & Training Modules")
+    st.write("- Hygiene management")
+    st.write("- Visitor and staff protocols")
+    st.write("- Feed and water safety")
+    st.write("- Vaccination and sick animal isolation")
+
+# --- Compliance Tracker ---
+with tabs[2]:
+    st.subheader(t["compliance"])
+    st.write("✅ Track your compliance tasks")
+    st.write("- Daily cleaning logs")
+    st.write("- Footbath/vehicle disinfection")
+    st.write("- Record vaccinations")
+    st.write("- Update outbreak logs")
+
+# --- Dashboard & Alerts ---
+with tabs[3]:
+    st.subheader(t["dashboard"])
+    st.write("📊 Farm Overview & Alerts")
+    st.write("- Nearby outbreaks: None")
+    st.write("- Risk status: Moderate")
+    st.write("- Compliance: 3/5 tasks completed")
+
