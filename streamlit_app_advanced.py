@@ -6,7 +6,7 @@ Features:
 - Farm dashboard, alerts, compliance, training
 - Points & badges
 - Farmer–Vet messaging
-- Background image support
+- Background image support (poultry.png)
 - Semi-transparent containers for readability
 """
 
@@ -15,12 +15,8 @@ import pandas as pd
 import numpy as np
 import json, os, uuid, hashlib
 from datetime import datetime, date
-import altair as alt
-import pydeck as pdk
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 import base64
+from sklearn.ensemble import RandomForestClassifier
 
 # ---------- Data storage ----------
 DATA_FILE = "farm_data_final.json"
@@ -38,31 +34,13 @@ def save_data(d):
 
 data = load_data()
 
-# ---------- Utility functions ----------
-def hash_record(record: dict):
-    s = json.dumps(record, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(s).hexdigest()
-
-def generate_certificate_text(farm):
-    txt = f"""Certificate of Biosecurity Progress
-
-Farm: {farm['farm']}
-Owner: {farm['owner']}
-Species: {farm['species']}
-Location: {farm['location']}
-Date: {date.today().isoformat()}
-
-This is to certify that the farm has attained the 'Biosecure Starter' badge in the Digital Farm Biosecurity Portal prototype.
-"""
-    return txt
-
-# ---------- Background image function ----------
+# ---------- Background image ----------
 def set_background(image_file):
     if not os.path.exists(image_file):
         return
     with open(image_file, "rb") as file:
-        data = file.read()
-    b64 = base64.b64encode(data).decode()
+        data_img = file.read()
+    b64 = base64.b64encode(data_img).decode()
     page_bg = f"""
     <style>
     .stApp {{
@@ -129,8 +107,7 @@ with col2:
 t = LANGS[st.session_state.lang]
 
 # ---------- Set Background ----------
-# Choose image: "poultry.jpg" or "pig_farm.jpg"
-set_background("poultry.png")  
+set_background("poultry.png")  # updated PNG background
 
 # ---------- Train synthetic AI model ----------
 @st.cache_resource
@@ -145,10 +122,11 @@ def train_model(seed=42):
     clf = RandomForestClassifier(n_estimators=80, random_state=seed)
     clf.fit(X,y)
     return clf
+
 model = train_model()
 
 # ---------- Rest of app ----------
-# Left: Farm registration & selection
+# Farm registration & selection
 left, right = st.columns([2.5,7.5])
 with left:
     st.header(t["register"])
@@ -178,10 +156,10 @@ with left:
         current_id = None
         st.info("No farms yet")
 
-# Right: Tabs (Risk, Training, Compliance, Dashboard)
+# Right side tabs: Risk Assessment, Training, Compliance, Dashboard
 tabs = right.tabs([t["risk_assessment"], t["training"], t["compliance"], t["dashboard"]])
 
-# --- Risk Assessment Tab ---
+# Risk Assessment Tab
 with tabs[0]:
     st.subheader(t["risk_assessment"])
     if current_farm:
@@ -208,9 +186,5 @@ with tabs[0]:
     else:
         st.info("Select a farm first")
 
-# --- Remaining tabs (Training, Compliance, Dashboard) ---
-# You can integrate the code from the previous version here
-# All forms and tables will appear in semi-transparent containers
-
-st.sidebar.markdown("### Notes")
-st.sidebar.write("- Background images improve aesthetics for SIH
+# (You can extend tabs[1], tabs[2], tabs[3] similarly using previous prototype features)
+# Semi-transparent containers already applied in CSS
