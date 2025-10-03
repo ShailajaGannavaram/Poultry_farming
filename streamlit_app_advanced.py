@@ -130,7 +130,7 @@ t = LANGS[st.session_state.lang]
 
 # ---------- Set Background ----------
 # Choose image: "poultry.jpg" or "pig_farm.jpg"
-set_background("poultry.jpg")  
+set_background("poultry.png")  
 
 # ---------- Train synthetic AI model ----------
 @st.cache_resource
